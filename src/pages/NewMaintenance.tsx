@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarDays, ChevronDown, Loader2, Save, Settings, Wrench } from "lucide-react";
 import { Getasset, type AssetApiAsset } from "@/api/AssetApi/Getasset";
 import { getUsers } from "@/api/Getusers";
-import { createMaintenanceRecord, type MaintenanceStatus } from "@/api/MaintenanceApi/MaintenanceApi";
+import { createMaintenanceRecord, getMaintenanceRecord, updateMaintenanceRecord, type MaintenanceStatus } from "@/api/MaintenanceApi/MaintenanceApi";
 import { getStaff, type StaffRecord } from "@/api/StaffApi";
 
 const inputClass =
@@ -12,6 +12,8 @@ const inputClass =
 export default function NewMaintenance(): React.ReactElement {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const recordId = Number(searchParams.get("recordId"));
+  const isEditing = Number.isInteger(recordId) && recordId > 0;
   const [assets, setAssets] = useState<AssetApiAsset[]>([]);
   const [staff, setStaff] = useState<StaffRecord[]>([]);
   const [assetId, setAssetId] = useState(searchParams.get("assetId") ?? "");
@@ -60,6 +62,27 @@ export default function NewMaintenance(): React.ReactElement {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isEditing) return;
+
+    getMaintenanceRecord(recordId).then((result) => {
+      const record = result.data?.maintenanceRecord;
+      if (!record) {
+        setError(result.message ?? "Failed to load maintenance record");
+        return;
+      }
+
+      setAssetId(String(record.assetId));
+      setMaintenanceType(record.maintenanceType);
+      setVendorId(record.vendorId ? String(record.vendorId) : "");
+      setCost(record.cost?.toString() ?? "");
+      setLastServiceDate(record.lastServiceDate?.slice(0, 10) ?? "");
+      setNextServiceDate(record.nextServiceDate?.slice(0, 10) ?? "");
+      setStatus(record.status);
+      setNotes(record.notes ?? "");
+    });
+  }, [isEditing, recordId]);
+
   const selectedAsset = useMemo(
     () => assets.find((asset) => String(asset.id) === assetId),
     [assets, assetId]
@@ -78,7 +101,7 @@ export default function NewMaintenance(): React.ReactElement {
     setSubmitting(true);
     setError("");
 
-    const result = await createMaintenanceRecord({
+    const payload = {
       assetId: Number(assetId),
       maintenanceType: maintenanceType.trim(),
       vendorId: vendorId ? Number(vendorId) : null,
@@ -87,8 +110,10 @@ export default function NewMaintenance(): React.ReactElement {
       nextServiceDate: nextServiceDate || null,
       status,
       notes: notes.trim() || null,
-      createdBy: currentUserId,
-    });
+    };
+    const result = isEditing
+      ? await updateMaintenanceRecord(recordId, payload)
+      : await createMaintenanceRecord({ ...payload, createdBy: currentUserId });
 
     setSubmitting(false);
 
@@ -106,10 +131,10 @@ export default function NewMaintenance(): React.ReactElement {
         <div>
           <p className="text-sm text-[#606475]">
             <Link to="/maintenance" className="hover:underline">Maintenance</Link> &gt;{" "}
-            <strong className="text-[#001970]">Schedule service</strong>
+            <strong className="text-[#001970]">{isEditing ? "Update service" : "Schedule service"}</strong>
           </p>
-          <h1 className="mt-2 text-3xl font-bold text-[#11111a]">Schedule Maintenance</h1>
-          <p className="mt-1 text-[#30313d]">Create a service record linked directly to an asset.</p>
+          <h1 className="mt-2 text-3xl font-bold text-[#11111a]">{isEditing ? "Update Maintenance" : "Schedule Maintenance"}</h1>
+          <p className="mt-1 text-[#30313d]">{isEditing ? "Update the selected asset's maintenance record." : "Create a service record linked directly to an asset."}</p>
         </div>
         <Link className="font-bold text-[#001970]" to="/maintenance">
           Back to Maintenance
@@ -219,7 +244,7 @@ export default function NewMaintenance(): React.ReactElement {
               type="button"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {submitting ? "Scheduling..." : loadingUser ? "Preparing..." : "Schedule Maintenance"}
+              {submitting ? "Saving..." : loadingUser ? "Preparing..." : isEditing ? "Save Changes" : "Schedule Maintenance"}
             </button>
           </div>
         </article>

@@ -438,7 +438,7 @@ export default function Reports() {
           </article>
         ))}
       </div>
-
+         //RECENT INTELLIGENCE REPORT
       <article className="overflow-hidden rounded border border-[#c7c4d8] bg-white">
         <h2 className="p-7 text-2xl font-bold">Recent Intelligence Logs</h2>
         <table className="w-full text-left">

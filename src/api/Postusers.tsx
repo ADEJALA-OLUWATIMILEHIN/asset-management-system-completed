@@ -1,4 +1,5 @@
 import type { ApiUser } from "./Getusers";
+import { getAuthToken } from "./LoginApi/LoginApi";
 
 type ApiResult<T> = {
   message: string;
@@ -15,6 +16,7 @@ export type CreateUserPayload = {
   avatar_url?: string | null;
   two_fa_enabled?: boolean;
   security_clearance?: string | null;
+  password?: string;
 };
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3005";
@@ -36,6 +38,7 @@ export const createUser = async (
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${getAuthToken() ?? ""}`,
       },
       body: JSON.stringify(payload),
     });

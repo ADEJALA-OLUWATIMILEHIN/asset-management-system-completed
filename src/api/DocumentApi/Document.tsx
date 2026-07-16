@@ -226,6 +226,17 @@ export function timeAgo(dateStr: string): string {
   return `${value}${unit} ago`;
 }
 
+/** GET /document?assetId=:assetId — list documents linked to one asset. */
+export async function getDocumentsForAsset(assetId: number): Promise<DocumentRecord[]> {
+  const res = await fetch(`${API_BASE_URL}/document?assetId=${encodeURIComponent(assetId)}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
+  const data = await handleResponse<{ documents: DocumentRecord[] }>(res);
+  return data.documents;
+}
+
 export async function uploadDocumentFile(file: File): Promise<{
   fileUrl: string;
   fileSizeBytes: number;

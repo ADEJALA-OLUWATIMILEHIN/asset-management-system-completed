@@ -115,6 +115,33 @@ export const getMaintenanceStats = async (): Promise<
   }
 };
 
+export const getMaintenanceRecord = async (
+  id: number
+): Promise<ApiResult<{ maintenanceRecord: MaintenanceRecord }>> => {
+  try {
+    const res = await fetch(`${maintenanceUrl}/${id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) {
+      const message = await readErrorMessage(res, "Failed to fetch maintenance record");
+      return { message, data: null };
+    }
+
+    const body = await res.json();
+    return {
+      message: "Maintenance record fetched successfully",
+      data: body.maintenanceRecord ? { maintenanceRecord: body.maintenanceRecord } : body.data,
+    };
+  } catch (error) {
+    return {
+      message: error instanceof Error ? error.message : "An error occurred",
+      data: null,
+    };
+  }
+};
+
 export const createMaintenanceRecord = async (
   payload: CreateMaintenancePayload
 ): Promise<ApiResult<{ maintenanceRecord: MaintenanceRecord }>> => {

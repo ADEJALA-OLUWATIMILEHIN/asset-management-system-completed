@@ -2,7 +2,6 @@ import {
   AlertCircle,
   ArrowUpRight,
   BadgeInfo,
-  Camera,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -20,6 +19,7 @@ import {
   PackagePlus,
   Pencil,
   Plus,
+  Printer,
   Search,
   Upload,
   UserSquare,
@@ -29,7 +29,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Getasset } from "@/api/AssetApi/Getasset";
 import type { AssetApiAsset, AssetCategory, AssetStatus } from "@/api/AssetApi/Getasset";
-import { getDocuments, type DocumentRecord } from "@/api/DocumentApi/Document";
+import { getDocumentsForAsset, type DocumentRecord } from "@/api/DocumentApi/Document";
 import { getMaintenanceRecords, type MaintenanceRecord } from "@/api/MaintenanceApi/MaintenanceApi";
 
 type RegistryCategoryTone = "vehicle" | "hardware" | "property" | "furniture" | "equipment";
@@ -225,6 +225,25 @@ const formatMoney = (value?: number | string | null) => {
     style: "currency",
     currency: "NGN",
   }).format(amount);
+};
+
+const escapeReportValue = (value: unknown) =>
+  String(value ?? "Not available").replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
+  })[character] ?? character);
+
+const printPdfTableReport = (title: string, asset: AssetApiAsset, headers: string[], rows: Array<Array<unknown>>) => {
+  // Keep a writable window reference so the report HTML can be rendered before printing.
+  // `noopener` opens a blank tab but returns null in Chromium, which prevented this report from loading.
+  const report = window.open("", "_blank");
+  if (!report) return;
+
+  const headerMarkup = headers.map((header) => `<th>${escapeReportValue(header)}</th>`).join("");
+  const rowMarkup = rows.map((row) => `<tr>${row.map((value) => `<td>${escapeReportValue(value)}</td>`).join("")}</tr>`).join("");
+  report.document.write(`<!doctype html><html><head><title>${escapeReportValue(title)}</title><style>
+    @page{size:A4 landscape;margin:14mm}*{box-sizing:border-box}body{color:#11111a;font-family:Arial,sans-serif;margin:0}header{border-bottom:3px solid #001970;margin-bottom:20px;padding-bottom:16px}.eyebrow{color:#606475;font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase}h1{color:#001970;font-size:28px;margin:6px 0}.subtitle{color:#30313d;font-size:13px;margin:0}table{border-collapse:collapse;font-size:11px;width:100%}th{background:#f0eef7;color:#30313d;font-size:10px;text-transform:uppercase}th,td{border:1px solid #c7c4d8;padding:8px;text-align:left;vertical-align:top}tr:nth-child(even) td{background:#faf9fd}footer{color:#606475;display:flex;font-size:10px;justify-content:space-between;margin-top:14px}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+  </style></head><body><header><div class="eyebrow">Sterling Assurance Asset Management System</div><h1>${escapeReportValue(title)}</h1><p class="subtitle">Asset: ${escapeReportValue(asset.assetCode)} — ${escapeReportValue(asset.name)}</p></header><table><thead><tr>${headerMarkup}</tr></thead><tbody>${rowMarkup}</tbody></table><footer><span>Generated: ${new Date().toLocaleString()}</span><span>${escapeReportValue(title)}</span></footer><script>window.addEventListener("load",()=>{window.focus();window.print();});</script></body></html>`);
+  report.document.close();
 };
 
 const formatEnum = (value?: string | null) => {
@@ -495,13 +514,13 @@ export default function Assets() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button className="inline-flex h-11 items-center justify-center gap-3 rounded border border-[#c7c4d8] bg-[#fbfaff] px-6 text-sm font-bold text-[#001970]">
+          <button className="inline-flex h-11 items-center justify-center gap-3 rounded bg-[#001970] px-6 text-sm font-bold text-white shadow-sm">
             <Download className="h-4 w-4" />
             Export
-            <ChevronDown className="h-4 w-4 text-[#606475]" />
+            <ChevronDown className="h-4 w-4" />
           </button>
           <Link
-            className="inline-flex h-11 items-center justify-center gap-3 rounded bg-[#263f91] px-7 text-sm font-bold text-white shadow-sm"
+            className="inline-flex h-11 items-center justify-center gap-3 rounded bg-[#001970] px-7 text-sm font-bold text-white shadow-sm"
             to="/assets/new"
           >
             <Plus className="h-5 w-5" />
@@ -555,7 +574,7 @@ export default function Assets() {
             <FilterSelect label="Branch" onChange={setBranchFilter} options={branchOptions} value={branchFilter} />
             <FilterSelect label="Status" onChange={setStatusFilter} options={statusOptions} value={statusFilter} />
             <button
-              className="h-11 px-3 text-sm font-bold text-[#001970]"
+              className="h-11 rounded bg-[#001970] px-5 text-sm font-bold text-white shadow-sm"
               onClick={clearFilters}
               type="button"
             >
@@ -642,7 +661,7 @@ export default function Assets() {
                         className="grid h-9 w-9 place-items-center rounded text-[#111827] hover:bg-[#eef2ff]"
                         onClick={(event) => {
                           event.stopPropagation();
-                          navigate(`/assets/${row.id}`);
+                          navigate(`/assets/${row.id}/edit`);
                         }}
                         type="button"
                       >
@@ -761,39 +780,42 @@ function AssetDetailView({
   const [linkedDocuments, setLinkedDocuments] = useState<DocumentRecord[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsLoaded, setDocumentsLoaded] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
   const branchLocation = getBranchLocation(selectedAsset);
   const departmentName = getDepartmentName(selectedAsset);
   const conditionScore = Math.max(0, Math.min(100, selectedAsset.conditionScore ?? 0));
   const statusClass = statusClasses[selectedAsset.status] ?? "bg-[#e5e7eb] text-[#374151]";
   const category = categoryLabels[selectedAsset.category] ?? formatEnum(selectedAsset.category);
-  const documentCount = selectedAsset.documents?.length ?? 0;
+  const documentCount = documentsLoaded ? linkedDocuments.length : null;
 
   useEffect(() => {
-    if (activeTab !== "documents") return;
-
     let mounted = true;
 
     queueMicrotask(() => {
       if (!mounted) return;
       setDocumentsLoading(true);
+      setDocumentsLoaded(false);
 
-      getDocuments()
+      getDocumentsForAsset(selectedAsset.id)
         .then((docs) => {
           if (mounted) {
-            setLinkedDocuments(docs.filter((doc) => doc.linkedAssetId === selectedAsset.id));
+            setLinkedDocuments(docs);
           }
         })
         .catch((error) => console.error("Failed to load linked documents", error))
         .finally(() => {
-          if (mounted) setDocumentsLoading(false);
+          if (mounted) {
+            setDocumentsLoading(false);
+            setDocumentsLoaded(true);
+          }
         });
     });
 
     return () => {
       mounted = false;
     };
-  }, [activeTab, selectedAsset.id]);
+  }, [selectedAsset.id]);
 
   useEffect(() => {
     if (activeTab !== "maintenance") return;
@@ -903,7 +925,7 @@ function AssetDetailView({
             </label>
           )}
           <Link
-            className="inline-flex h-14 items-center gap-3 rounded border border-[#c7c4d8] bg-white px-6 text-lg text-[#001970] hover:bg-[#f3f1f8]"
+            className="inline-flex h-14 items-center gap-3 rounded bg-[#001970] px-6 text-lg font-semibold text-white shadow-sm"
             to={`/assets/${selectedAsset.id}/edit`}
           >
             <Edit3 className="h-5 w-5" />
@@ -966,16 +988,7 @@ function AssetDetailView({
               </div>
 
               <div className="mt-7 grid gap-5 lg:grid-cols-2">
-                <article className="relative min-h-[360px] overflow-hidden rounded-lg border border-[#c7c4d8] bg-[#101a20] shadow-sm">
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_55%_45%,#f9fbff_0_13%,#dce3e7_14%_27%,transparent_28%),linear-gradient(180deg,#15313a,#0b1116)]" />
-                  <div className="absolute bottom-9 left-8 h-24 w-[78%] rounded-full bg-white/90 shadow-[0_0_80px_18px_rgba(255,255,255,0.5)]" />
-                  <div className="absolute bottom-14 left-12 h-24 w-[72%] rounded-xl border-2 border-slate-700 bg-white" />
-                  <div className="absolute bottom-20 left-[18%] h-20 w-20 rounded-full border-[10px] border-[#1f2937] bg-slate-100" />
-                  <div className="absolute bottom-20 right-[18%] h-20 w-20 rounded-full border-[10px] border-[#1f2937] bg-slate-100" />
-                  <span className="absolute bottom-7 left-7 rounded bg-[#001970] px-4 py-2 text-lg text-white">
-                    Primary View
-                  </span>
-                </article>
+               
 
                 <article className="rounded-lg border border-[#c7c4d8] bg-white p-7">
                   <div className="mb-6 flex items-center justify-between text-lg text-[#001970]">
@@ -998,13 +1011,10 @@ function AssetDetailView({
               <h2 className="mb-5 text-xl font-bold text-[#001970]">Linked Documents</h2>
               {documentsLoading ? (
                 <div className="py-8 text-center text-[#606475]">Loading documents...</div>
-              ) : linkedDocuments.length > 0 || (selectedAsset?.documents && selectedAsset.documents.length > 0) ? (
+              ) : linkedDocuments.length > 0 ? (
                 <div className="space-y-3">
-                  {(linkedDocuments.length > 0 ? linkedDocuments : selectedAsset.documents ?? []).map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between rounded border border-[#c7c4d8] p-4"
-                    >
+                  {linkedDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between gap-4 rounded border border-[#c7c4d8] p-4">
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-[#001970]" />
                         <div>
@@ -1012,19 +1022,33 @@ function AssetDetailView({
                           <p className="text-sm text-[#606475]">{doc.docType || "Document"}</p>
                         </div>
                       </div>
-                      <span
-                        className={`rounded px-3 py-1 text-sm font-bold ${
-                          doc.status === "VERIFIED"
-                            ? "bg-[#d4f4dd] text-[#007042]"
-                            : doc.status === "EXPIRING_SOON"
-                              ? "bg-[#fff1c5] text-[#913900]"
-                              : "bg-[#ffe0e0] text-[#c50000]"
-                        }`}
-                      >
-                        {doc.status || "Active"}
-                      </span>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span
+                          className={`rounded px-3 py-1 text-sm font-bold ${
+                            doc.isVerified
+                              ? "bg-[#d4f4dd] text-[#007042]"
+                              : doc.status === "EXPIRING_SOON"
+                                ? "bg-[#fff1c5] text-[#913900]"
+                                : "bg-[#ffe0e0] text-[#c50000]"
+                          }`}
+                        >
+                          {doc.status || "Active"}
+                        </span>
+                      </div>
                     </div>
                   ))}
+                  <button
+                    className="mt-2 inline-flex items-center gap-2 rounded bg-[#001970] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00268f]"
+                    onClick={() => {
+                      printPdfTableReport("Document Upload Report", selectedAsset, ["Document", "Type", "Status", "Expiry date", "Verified"], linkedDocuments.map((doc) => [
+                        doc.name, doc.docType || "Document", doc.status || "Active",
+                        doc.expiryDate ? formatDate(doc.expiryDate) : "No expiry date", doc.isVerified ? "Yes" : "No",
+                      ]));
+                    }}
+                    type="button"
+                  >
+                    <Printer className="h-4 w-4" /> Print Document Uploads PDF
+                  </button>
                 </div>
               ) : (
                 <div className="py-8 text-center text-[#606475]">No documents linked to this asset</div>
@@ -1053,6 +1077,15 @@ function AssetDetailView({
                       {record.notes && <p className="mt-2 text-sm text-[#30313d]">{record.notes}</p>}
                     </div>
                   ))}
+                  <button
+                    className="mt-2 inline-flex items-center gap-2 rounded bg-[#001970] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#00268f]"
+                    onClick={() => printPdfTableReport("Maintenance History Report", selectedAsset, ["Maintenance type", "Status", "Last service", "Next service", "Cost", "Notes"], maintenanceRecords.map((record) => [
+                      record.maintenanceType, record.status, formatDate(record.lastServiceDate), formatDate(record.nextServiceDate), formatMoney(record.cost), record.notes,
+                    ]))}
+                    type="button"
+                  >
+                    <Printer className="h-4 w-4" /> Print Maintenance History PDF
+                  </button>
                 </div>
               ) : (
                 <div className="py-8 text-center text-[#606475]">No maintenance records available for this asset</div>
@@ -1071,9 +1104,9 @@ function AssetDetailView({
         <aside className="space-y-5">
           <article className="rounded-lg border border-[#c7c4d8] bg-white p-6 text-center">
             <h2 className="mb-7 tracking-[0.25em]">ASSET IDENTIFICATION</h2>
-            <div className="grid h-44 place-items-center rounded border border-[#c7c4d8] bg-[#17242b]">
+            {/* <div className="grid h-44 place-items-center rounded border border-[#c7c4d8] bg-[#17242b]">
               <Camera className="h-16 w-16 text-white" />
-            </div>
+            </div> */}
             <div className="mt-6 space-y-4 text-left">
               {sideStats.map(([label, value]) => (
                 <div className="bg-[#f1f0f7] p-4" key={label}>
@@ -1093,7 +1126,7 @@ function AssetDetailView({
             </div>
             {[
               ["Condition", formatEnum(selectedAsset.condition)],
-              ["Documents", `${documentCount} linked`],
+              ["Documents", documentCount === null ? "Loading..." : `${documentCount} linked`],
               ["Status", formatEnum(selectedAsset.status)],
             ].map(([label, value]) => (
               <div className="flex justify-between py-2 text-lg" key={label}>

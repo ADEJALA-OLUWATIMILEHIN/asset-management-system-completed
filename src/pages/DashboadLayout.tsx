@@ -2,7 +2,6 @@ import {
   BarChart3,
   CalendarDays,
   FileText,
-  History,
   LayoutDashboard,
   Package,
   Settings,
@@ -11,6 +10,7 @@ import {
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { Topbar } from "../components/Topbar/topbar";
+import ReminderAlerts from "../components/ReminderAlerts";
 
 const navItems = [
   { label: "Dashboard", to: "/", icon: LayoutDashboard },
@@ -20,7 +20,6 @@ const navItems = [
   { label: "Maintenance", to: "/maintenance", icon: Wrench },
   { label: "Reports", to: "/reports", icon: BarChart3 },
   { label: "Users", to: "/users", icon: Users },
-  { label: "Audit Logs", to: "/audit-logs", icon: History },
 ];
 
 const settingsItem = { label: "Settings", to: "/settings", icon: Settings };
@@ -82,6 +81,7 @@ export default function DashboardLayout() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar />
+          <ReminderAlerts />
           <main className="flex-1 overflow-auto px-5 py-8 sm:px-8 lg:px-10">
             <Outlet />
           </main>

@@ -199,7 +199,7 @@ export default function Maintenance() {
                       </span>
                     </td>
                     <td className="px-8 py-6">
-                      <Link className="font-bold text-[#001970] hover:underline" to={`/maintenance/schedule?assetId=${record.assetId}`}>
+                      <Link className="font-bold text-[#001970] hover:underline" to={`/maintenance/schedule?assetId=${record.assetId}&recordId=${record.id}`}>
                         Update
                       </Link>
                     </td>

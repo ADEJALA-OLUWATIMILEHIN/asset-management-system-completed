@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { getDepartments, type ApiDepartment, type ApiUser } from "@/api/Getusers";
 import { createUser } from "@/api/Postusers";
 import { createStaff } from "@/api/StaffApi";
+import { EyeOff } from 'lucide-react';
+import { getCurrentUser } from "@/api/LoginApi/LoginApi";
 
 const inputClass =
   "h-12 w-full rounded border border-[#c7c4d8] bg-white px-5 text-base text-[#11111a] outline-none placeholder:text-[#737789] focus:ring-2 focus:ring-[#001970]";
@@ -30,8 +32,9 @@ type RecordType = "USER" | "STAFF_VENDOR";
 
 export default function NewUser() {
   const navigate = useNavigate();
+  const isSuperAdmin = getCurrentUser()?.role === "SUPER_ADMIN";
   const [departments, setDepartments] = useState<ApiDepartment[]>([]);
-  const [recordType, setRecordType] = useState<RecordType>("USER");
+  const [recordType, setRecordType] = useState<RecordType>(isSuperAdmin ? "USER" : "STAFF_VENDOR");
   const [name, setName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [email, setEmail] = useState("");
@@ -41,6 +44,8 @@ export default function NewUser() {
   const [temporaryPassword, setTemporaryPassword] = useState(generatePassword);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
 
   useEffect(() => {
     let mounted = true;
@@ -66,6 +71,11 @@ export default function NewUser() {
   const handleSubmit = async () => {
     if (!canSubmit) return;
 
+    if (recordType === "USER" && !isSuperAdmin) {
+      setError("Only a super admin can create a system user and generate a temporary password.");
+      return;
+    }
+
     setSubmitting(true);
     setError("");
 
@@ -84,6 +94,7 @@ export default function NewUser() {
           status: "ACTIVE",
           security_clearance: employeeId.trim() || null,
           two_fa_enabled: false,
+          password: temporaryPassword,
         });
 
     setSubmitting(false);
@@ -131,7 +142,7 @@ export default function NewUser() {
                   value={recordType}
                   onChange={(event) => setRecordType(event.target.value as RecordType)}
                 >
-                  <option value="USER">System User</option>
+                  {isSuperAdmin && <option value="USER">System User</option>}
                   <option value="STAFF_VENDOR">Staff / Vendor</option>
                 </select>
               </label>
@@ -157,7 +168,7 @@ export default function NewUser() {
             </div>
           </article>
 
-          {recordType === "USER" && (
+          {recordType === "USER" && isSuperAdmin && (
           <article className="rounded-lg border border-[#c7c4d8] bg-white p-8">
             <h2 className="mb-6 flex items-center gap-3 border-b border-[#e6e3ee] pb-5 text-2xl font-bold">
               <Building2 className="h-6 w-6 text-[#001970]" />
@@ -183,7 +194,7 @@ export default function NewUser() {
           </article>
           )}
 
-          {recordType === "USER" && (
+          {recordType === "USER" && isSuperAdmin && (
           <article className="rounded-lg border border-[#c7c4d8] bg-white p-8">
             <h2 className="mb-6 flex items-center gap-3 border-b border-[#e6e3ee] pb-5 text-2xl font-bold">
               <ShieldCheck className="h-6 w-6 text-[#001970]" />
@@ -202,7 +213,8 @@ export default function NewUser() {
                 </button>
               ))}
             </div>
-            <label className="mt-7 grid gap-2 text-sm font-semibold">
+          
+            {/* <label className="mt-7 grid gap-2 text-sm font-semibold">
               Temporary Password
               <span className="flex gap-3">
                 <span className="relative flex-1">
@@ -214,10 +226,38 @@ export default function NewUser() {
                   Generate
                 </button>
               </span>
-            </label>
-          </article>
-          )}
-        </div>
+            </label> */}
+    <label className="mt-7 grid gap-2 text-sm font-semibold">
+     Temporary Password
+  <span className="flex gap-3">
+    <span className="relative flex-1">
+      <input
+        className={`${inputClass} pr-12`}
+        readOnly
+        type={showPassword ? 'text' : 'password'}
+        value={temporaryPassword}
+      />
+      <button
+        type="button"
+        onClick={() => setShowPassword((prev) => !prev)}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#606475]"
+      >
+        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+      </button>
+    </span>
+    <button
+      className="inline-flex h-12 items-center gap-2 rounded border border-[#c7c4d8] px-5 font-bold text-[#001970]"
+      onClick={() => setTemporaryPassword(generatePassword())}
+      type="button"
+    >
+      <KeyRound className="h-4 w-4" />
+      Generate
+    </button>
+  </span>
+</label>
+  </article>
+  )}
+</div>
 
         <aside className="space-y-5">
           <article className="rounded-lg border border-[#c7c4d8] bg-[#f7f6fd] p-8">
