@@ -168,7 +168,7 @@ export const Topbar = () => {
 
       {!isAudit && !isUsers && cta === "New Asset" && (
         <Link
-          className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800"
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-white px-5 text-sm font-medium text-blue-900 hover:bg-blue-800"
           to="/assets/new"
         >
           <Plus className="h-4 w-4" />
@@ -177,7 +177,7 @@ export const Topbar = () => {
       )}
       {!isAudit && !isUsers && cta && cta !== "New Asset" && (
         <Link
-          className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800"
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-white px-5 text-sm font-medium text-blue-900 hover:bg-blue-800"
           to={config.ctaTo ?? pathname}
         >
           <Plus className="h-4 w-4" />
