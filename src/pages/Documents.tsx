@@ -156,7 +156,7 @@ export default function Documents() {
         <Link to="/documents/new">
             <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800">
              <Upload className="h-4 w-4" />
-              Schedule Maintenance
+              Upload Document
             </button>
           </Link>
       </div>
