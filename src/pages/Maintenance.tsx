@@ -89,15 +89,11 @@ export default function Maintenance() {
           </p>
         </div>
         <div className="flex gap-4">
-          <button className="h-12 rounded border border-[#c7c4d8] bg-white px-8 font-bold text-[#001970]">
-            Export
-          </button>
-          <Link
-            className="inline-flex h-12 items-center gap-3 rounded bg-[#001970] px-8 font-bold text-white hover:bg-[#263f91]"
-            to="/maintenance/schedule"
-          >
-            <Plus className="h-5 w-5" />
-            Schedule Maintenance
+          <Link to="/maintenance/schedule">
+            <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800">
+             <Plus className="h-4 w-4" />
+              Schedule Maintenance
+            </button>
           </Link>
        
         </div>
