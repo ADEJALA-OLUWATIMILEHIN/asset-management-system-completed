@@ -167,22 +167,40 @@ export const Topbar = () => {
       )}
 
       {!isAudit && !isUsers && cta === "New Asset" && (
-        <Link
-          className="inline-flex h-11 items-center gap-2 rounded-lg  text-white bg-blue-900 px-5 text-sm font-medium hover:bg-blue-800"
-          to="/assets/new"
+        //Changing the Link color to white and background color to blue-900 for better visibility
+        // <Link
+        //   className="inline-flex h-11 items-center gap-2 rounded-lg  text-white bg-blue-900 px-5 text-sm font-medium hover:bg-blue-800"
+        //   to="/assets/new"
+        // >
+        //   <Plus className="h-4 w-4" />
+        //   {cta}
+        // </Link>
+        <Link to="/assets/new"
         >
-          <Plus className="h-4 w-4" />
+           <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800">
           {cta}
-        </Link>
+          </button>
+          </Link>
+
       )}
       {!isAudit && !isUsers && cta && cta !== "New Asset" && (
-        <Link
-          className="inline-flex h-11 items-center gap-2 rounded-lg text-white bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800"
-          to={config.ctaTo ?? pathname}
+        //Changing the Link color to white and background color to blue-900 for better visibility
+        // <Link
+        //   className="inline-flex h-11 items-center gap-2 rounded-lg text-white bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800"
+        //   to={config.ctaTo ?? pathname}
+        // >
+        //   <Plus className="h-4 w-4" />
+        //   {cta}
+        // </Link>
+
+          <Link
+        to={config.ctaTo ?? pathname}
         >
+          <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800">
           <Plus className="h-4 w-4" />
           {cta}
-        </Link>
+          </button>
+        </Link>  
       )}
 
       <div className="relative">
