@@ -3,7 +3,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Download,
+
   MoreVertical,
   UserRoundPlus,
 } from "lucide-react";
@@ -117,13 +117,20 @@ export default function Users() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="inline-flex h-12 items-center gap-3 rounded border border-[#c7c4d8] bg-white px-6 font-bold text-[#001970]">
+          {/* <button className="inline-flex h-12 items-center gap-3 rounded border border-[#c7c4d8] bg-white px-6 font-bold text-[#001970]">
             <Download className="h-5 w-5" />
             Export
-          </button>
-          <Link to="/users/new" className="inline-flex h-12 items-center gap-3 rounded bg-[#001970] px-6 font-bold text-white">
+          </button> */}
+        
+          {/* <Link to="/users/new" className="inline-flex h-12 items-center gap-3 rounded bg-[#001970] px-6 font-bold text-white">
             <UserRoundPlus className="h-5 w-5" />
             Add User
+          </Link> */}
+          <Link to="/users/new">
+            <button className="inline-flex h-12 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800">
+             <UserRoundPlus className="h-5 w-5" />
+            Add User
+            </button>
           </Link>
         </div>
       </div>
