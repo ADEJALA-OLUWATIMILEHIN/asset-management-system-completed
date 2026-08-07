@@ -154,11 +154,11 @@ export default function Documents() {
           <h1 className="mt-2 text-lg">Document Repository</h1>
         </div>
         <Link to="/documents/new">
-          <button className="inline-flex h-12 items-center gap-3 rounded bg-[#001970] px-8 text-lg font-bold text-white">
-            <Upload className="h-5 w-5" />
-            Upload Document
-          </button>
-        </Link>
+            <button className="inline-flex h-11 items-center gap-2 rounded-lg bg-blue-900 px-5 text-sm font-medium text-white hover:bg-blue-800">
+             <Upload className="h-4 w-4" />
+              Schedule Maintenance
+            </button>
+          </Link>
       </div>
 
       <div className="mb-7 grid gap-5 md:grid-cols-4">
