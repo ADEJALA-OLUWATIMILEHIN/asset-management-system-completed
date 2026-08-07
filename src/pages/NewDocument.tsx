@@ -17,9 +17,9 @@ import {
 const DOC_TYPE_OPTIONS: Array<{ value: DocType; label: string }> = [
   { value: "VEHICLE_INSURANCE", label: "Vehicle Insurance" },
   { value: "MAINTENANCE_AGREEMENT", label: "Maintenance Agreement" },
-  { value: "COMPLIANCE_CERT", label: "Compliance Cert" },
-  { value: "REAL_ESTATE_LEASE", label: "Real Estate Lease" },
-  { value: "PURCHASE_ORDER", label: "Purchase Order" },
+  { value: "VIRTUAL_CERTIFICATE", label: "Virtual Certificate" },
+  { value: "MOTOR_CLAIMS", label: "Motor Claims" },
+  { value: "PURCHASE_INVOICE", label: "Purchase Invoice" },
 ];
 
 const STATUS_OPTIONS: DocStatus[] = ["ACTIVE", "EXPIRING_SOON", "EXPIRED", "PERMANENT"];
