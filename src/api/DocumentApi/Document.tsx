@@ -4,9 +4,9 @@
 export type DocType =
   | "VEHICLE_INSURANCE"
   | "MAINTENANCE_AGREEMENT"
-  | "COMPLIANCE_CERT"
-  | "REAL_ESTATE_LEASE"
-  | "PURCHASE_ORDER";
+  | "VIRTUAL_CERTIFICATE"
+  | "MOTOR_CLAIMS"
+  | "PURCHASE_INVOICE";
 
 export type DocStatus = "ACTIVE" | "EXPIRING_SOON" | "EXPIRED" | "PERMANENT";
 
@@ -153,9 +153,9 @@ export async function deleteDocument(id: number): Promise<void> {
 const DOC_TYPE_LABELS: Record<DocType, string> = {
   VEHICLE_INSURANCE: "Vehicle Insurance",
   MAINTENANCE_AGREEMENT: "Maintenance Agreement",
-  COMPLIANCE_CERT: "Compliance Cert",
-  REAL_ESTATE_LEASE: "Real Estate Lease",
-  PURCHASE_ORDER: "Purchase Order",
+  VIRTUAL_CERTIFICATE: "Virtual Certificate",
+  MOTOR_CLAIMS: "Motor Claims",
+  PURCHASE_INVOICE: "Purchase Invoice",
 };
 
 const STATUS_LABELS: Record<DocStatus, string> = {
