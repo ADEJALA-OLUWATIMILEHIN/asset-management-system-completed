@@ -514,18 +514,28 @@ export default function Assets() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
+         {/* 
+         // REMOVED THE ASSET BUTTON
+          
           <button className="inline-flex h-11 items-center justify-center gap-3 rounded bg-[#001970] px-6 text-sm font-bold text-white shadow-sm">
             <Download className="h-4 w-4" />
             Export
             <ChevronDown className="h-4 w-4" />
-          </button>
-          <Link
+          </button> */}
+          {/* <Link
             className="inline-flex h-11 items-center justify-center gap-3 rounded bg-[#001970] px-7 text-sm font-bold text-white shadow-sm"
             to="/assets/new"
           >
             <Plus className="h-5 w-5" />
             Add New Asset
-          </Link>
+          </Link> */}
+          <Link to="/assets/new"
+          >
+            <button className="inline-flex h-11 items-center justify-center gap-3  px-7 text-sm font-bold shadow-sm rounded-lg bg-blue-900 font-medium text-white hover:bg-blue-800">
+              <Plus className="h-5 w-5" />
+              Add New Asset
+            </button>
+            </Link>
         </div>
       </div>
 
