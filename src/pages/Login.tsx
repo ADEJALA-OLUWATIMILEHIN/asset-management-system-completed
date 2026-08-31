@@ -1,4 +1,4 @@
-import { EyeClosed, EyeIcon } from "lucide-react";
+import { ArrowLeft, EyeClosed, EyeIcon, Mail } from "lucide-react";
 import React, { useState } from "react";
 import type { FormEvent } from "react";
 
@@ -25,6 +25,8 @@ const LoginPage: React.FC<LoginPageProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -51,6 +53,31 @@ const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
+  const showForgotPassword = () => {
+    setError(null);
+    setResetSent(false);
+    setIsForgotPassword(true);
+  };
+
+  const showLogin = () => {
+    setError(null);
+    setResetSent(false);
+    setIsForgotPassword(false);
+  };
+
+  const handleResetRequest = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!email) {
+      setError("Please enter your email address.");
+      return;
+    }
+
+    // This is intentionally frontend-only until a password-reset API is available.
+    setResetSent(true);
+  };
+
   return (
     <div className="h-screen overflow-hidden bg-surface-container-low login-mesh font-body-md text-on-surface antialiased flex flex-col">
       <main className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 py-8">
@@ -70,6 +97,66 @@ const LoginPage: React.FC<LoginPageProps> = ({
 
           {/* Auth card */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 auth-card">
+            {isForgotPassword ? (
+              <form className="space-y-6" id="forgotPasswordForm" onSubmit={handleResetRequest} noValidate>
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={showLogin}
+                    className="inline-flex items-center gap-2 font-label-sm text-label-sm text-primary"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to sign in
+                  </button>
+                  <h1 className="pt-3 font-title-lg text-title-lg text-on-surface">Forgot password?</h1>
+                  <p className="text-sm leading-6 text-on-surface-variant">
+                    Enter your email address and we’ll send you instructions to reset your password.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block font-label-md text-label-md text-on-surface-variant" htmlFor="reset-email">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-outline" />
+                    <input
+                      id="reset-email"
+                      name="reset-email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setResetSent(false);
+                      }}
+                      className="w-full border border-outline-variant bg-surface py-3 pl-11 pr-4 font-body-md outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg"
+                      placeholder="name@sterlingassure.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <div role="alert" className="rounded-lg bg-error-container px-3 py-2 font-label-sm text-label-sm text-on-error-container">
+                    {error}
+                  </div>
+                )}
+
+                {resetSent && (
+                  <div role="status" className="rounded-lg bg-primary-container/20 px-3 py-3 text-sm leading-6 text-on-surface">
+                    If an account exists for <span className="font-semibold">{email}</span>, password-reset instructions will be sent there.
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full rounded-lg bg-primary-container py-3.5 font-title-lg text-title-lg text-on-primary-container shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
+                >
+                  Send reset instructions
+                </button>
+              </form>
+            ) : (
             <form className="space-y-6" id="loginForm" onSubmit={handleSubmit} noValidate>
               {/* Email */}
               <div className="space-y-2">
@@ -103,12 +190,13 @@ const LoginPage: React.FC<LoginPageProps> = ({
                   >
                     Password
                   </label>
-                  <a
+                  <button
+                    type="button"
                     className="font-label-sm text-label-sm text-primary hover:underline transition-all"
-                    href="#forgot-password"
+                    onClick={showForgotPassword}
                   >
                     Forgot Password?
-                  </a>
+                  </button>
                 </div>
                 <div className="relative group">
                
@@ -154,7 +242,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                 {isSubmitting ? (
                   <>
                     <span className="material-symbols-outlined text-[20px] animate-spin">
-                      progress_activity
+                      <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full "></div>
                     </span>
                     Validating...
                   </>
@@ -167,6 +255,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
                 )}
               </button>
             </form>
+            )}
           </div>
 
         </div>

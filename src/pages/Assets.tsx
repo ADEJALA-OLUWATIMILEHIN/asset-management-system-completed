@@ -262,9 +262,9 @@ const valueOrFallback = (value?: string | number | null) =>
 const getDepartmentName = (asset: AssetApiAsset) => asset.department?.name ?? "Unassigned";
 
 const getBranchLocation = (asset: AssetApiAsset) =>
+  asset.location ??
   asset.department?.branch_location ??
   asset.department?.branchLocation ??
-  asset.location ??
   "Not recorded";
 
 const getRegistryCategory = (asset: AssetApiAsset): Pick<RegistryRow, "categoryLabel" | "categoryTone"> => {
