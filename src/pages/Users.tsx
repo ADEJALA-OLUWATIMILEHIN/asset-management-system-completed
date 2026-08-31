@@ -7,7 +7,7 @@ import {
   UserRoundPlus,
 } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getUsers, type ApiUser } from "@/api/Getusers";
 
@@ -25,6 +25,19 @@ const statusClass: Record<string, string> = {
 };
 
 const bars = ["h-5 bg-[#c8d1df]", "h-8 bg-[#c0cada]", "h-4 bg-[#c8d1df]", "h-10 bg-[#9aa9c1]", "h-12 bg-[#001970]"];
+const USERS_PER_PAGE = 10;
+
+const getPaginationItems = (currentPage: number, totalPages: number): Array<number | "ellipsis"> => {
+  const pages = [1, 2, 3, currentPage - 1, currentPage, currentPage + 1, totalPages]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .filter((page, index, allPages) => allPages.indexOf(page) === index)
+    .sort((first, second) => first - second);
+
+  return pages.flatMap((page, index) => {
+    const previousPage = pages[index - 1];
+    return index > 0 && page - previousPage > 1 ? ["ellipsis", page] : [page];
+  });
+};
 
 type UserRow = {
   id: string;
@@ -68,6 +81,7 @@ export default function Users() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,6 +114,16 @@ export default function Users() {
       isMounted = false;
     };
   }, []);
+
+  const totalPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedUsers = useMemo(
+    () => users.slice((activePage - 1) * USERS_PER_PAGE, activePage * USERS_PER_PAGE),
+    [activePage, users]
+  );
+  const paginationItems = useMemo(() => getPaginationItems(activePage, totalPages), [activePage, totalPages]);
+  const shownStart = users.length > 0 ? (activePage - 1) * USERS_PER_PAGE + 1 : 0;
+  const shownEnd = Math.min(activePage * USERS_PER_PAGE, users.length);
 
   return (
     <section className="mx-auto max-w-[1240px]">
@@ -178,7 +202,7 @@ export default function Users() {
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                paginatedUsers.map((user) => (
                   <tr className="text-base" key={user.id}>
                     <td className="px-8 py-6">
                       <strong className="max-w-[180px] text-lg leading-6">{user.name}</strong>
@@ -208,20 +232,39 @@ export default function Users() {
         </div>
 
         <div className="flex flex-col gap-4 px-8 py-5 text-base sm:flex-row sm:items-center sm:justify-between">
-          <span>Showing {users.length} users</span>
+          <span>Showing {shownStart} - {shownEnd} of {users.length} users</span>
           <div className="flex items-center gap-3">
-            <button className="grid h-9 w-9 place-items-center rounded border border-[#e3e0ec] text-[#c7c4d8]">
+            <button
+              aria-label="Previous page"
+              className="grid h-9 w-9 place-items-center rounded border border-[#c7c4d8] text-[#606475] disabled:border-[#e3e0ec] disabled:text-[#c7c4d8]"
+              disabled={activePage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              type="button"
+            >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            {[1, 2, 3].map((page) => (
-              <button
-                className={`grid h-9 w-10 place-items-center rounded border border-[#c7c4d8] ${page === 1 ? "bg-[#001970] text-white" : "bg-white"}`}
-                key={page}
-              >
-                {page}
-              </button>
-            ))}
-            <button className="grid h-9 w-9 place-items-center rounded border border-[#c7c4d8]">
+            {paginationItems.map((item, index) =>
+              item === "ellipsis" ? (
+                <span className="px-1 text-[#11111a]" key={`ellipsis-${index}`}>...</span>
+              ) : (
+                <button
+                  aria-current={item === activePage ? "page" : undefined}
+                  className={`grid h-9 w-10 place-items-center rounded border border-[#c7c4d8] ${item === activePage ? "bg-[#001970] text-white" : "bg-white"}`}
+                  key={item}
+                  onClick={() => setCurrentPage(item)}
+                  type="button"
+                >
+                  {item}
+                </button>
+              )
+            )}
+            <button
+              aria-label="Next page"
+              className="grid h-9 w-9 place-items-center rounded border border-[#c7c4d8] text-[#606475] disabled:border-[#e3e0ec] disabled:text-[#c7c4d8]"
+              disabled={activePage === totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              type="button"
+            >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>

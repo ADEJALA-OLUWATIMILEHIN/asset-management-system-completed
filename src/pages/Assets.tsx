@@ -276,6 +276,20 @@ const locationDistributionColors = [
   "bg-[#b55b00]",
 ];
 
+const ASSETS_PER_PAGE = 5;
+
+const getPaginationItems = (currentPage: number, totalPages: number): Array<number | "ellipsis"> => {
+  const pages = [1, 2, 3, currentPage - 1, currentPage, currentPage + 1, totalPages]
+    .filter((page) => page >= 1 && page <= totalPages)
+    .filter((page, index, allPages) => allPages.indexOf(page) === index)
+    .sort((first, second) => first - second);
+
+  return pages.flatMap((page, index) => {
+    const previousPage = pages[index - 1];
+    return index > 0 && page - previousPage > 1 ? ["ellipsis", page] : [page];
+  });
+};
+
 const getRegistryCategory = (asset: AssetApiAsset): Pick<RegistryRow, "categoryLabel" | "categoryTone"> => {
   if (asset.assetCode.startsWith("OFF-")) {
     return { categoryLabel: "FURNITURE", categoryTone: "furniture" };
@@ -383,6 +397,7 @@ export default function Assets() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [branchFilter, setBranchFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
     let isMounted = true;
 
@@ -475,6 +490,14 @@ export default function Assets() {
     })).sort((first, second) => second.count - first.count || first.location.localeCompare(second.location));
   }, [registryRows]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / ASSETS_PER_PAGE));
+  const activePage = Math.min(currentPage, totalPages);
+  const paginatedRows = useMemo(
+    () => filteredRows.slice((activePage - 1) * ASSETS_PER_PAGE, activePage * ASSETS_PER_PAGE),
+    [activePage, filteredRows]
+  );
+  const paginationItems = useMemo(() => getPaginationItems(activePage, totalPages), [activePage, totalPages]);
+
   const selectedAsset = assetId
     ? displayAssets.find((asset) => String(asset.id) === assetId)
     : undefined;
@@ -493,6 +516,17 @@ export default function Assets() {
     setDepartmentFilter("all");
     setBranchFilter("all");
     setStatusFilter("all");
+    setCurrentPage(1);
+  };
+
+  const updateSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const updateFilter = (setFilter: (value: string) => void) => (value: string) => {
+    setFilter(value);
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -525,8 +559,8 @@ export default function Assets() {
     );
   }
 
-  const shownStart = filteredRows.length > 0 ? 1 : 0;
-  const shownEnd = filteredRows.length;
+  const shownStart = filteredRows.length > 0 ? (activePage - 1) * ASSETS_PER_PAGE + 1 : 0;
+  const shownEnd = Math.min(activePage * ASSETS_PER_PAGE, filteredRows.length);
 
   return (
     <section className="mx-auto max-w-[1240px] pb-8">
@@ -591,7 +625,7 @@ export default function Assets() {
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#606475]" />
             <input
               className="h-11 w-full rounded border border-[#c7c4d8] bg-[#fbfaff] pl-12 pr-4 text-sm outline-none placeholder:text-[#686c7d] focus:ring-2 focus:ring-[#001970]"
-              onChange={(event) => setSearchTerm(event.target.value)}
+              onChange={(event) => updateSearch(event.target.value)}
               placeholder="Search by Asset Name, Code or Serial..."
               type="search"
               value={searchTerm}
@@ -599,15 +633,15 @@ export default function Assets() {
           </label>
 
           <div className="flex flex-1 flex-wrap gap-3">
-            <FilterSelect label="Asset Class" onChange={setClassFilter} options={classOptions} value={classFilter} />
+            <FilterSelect label="Asset Class" onChange={updateFilter(setClassFilter)} options={classOptions} value={classFilter} />
             <FilterSelect
               label="Department"
-              onChange={setDepartmentFilter}
+              onChange={updateFilter(setDepartmentFilter)}
               options={departmentOptions}
               value={departmentFilter}
             />
-            <FilterSelect label="Branch" onChange={setBranchFilter} options={branchOptions} value={branchFilter} />
-            <FilterSelect label="Status" onChange={setStatusFilter} options={statusOptions} value={statusFilter} />
+            <FilterSelect label="Branch" onChange={updateFilter(setBranchFilter)} options={branchOptions} value={branchFilter} />
+            <FilterSelect label="Status" onChange={updateFilter(setStatusFilter)} options={statusOptions} value={statusFilter} />
             <button
               className="h-11 rounded bg-[#001970] px-5 text-sm font-bold text-white shadow-sm"
               onClick={clearFilters}
@@ -641,7 +675,7 @@ export default function Assets() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#c7c4d8]">
-              {filteredRows.map((row) => (
+              {paginatedRows.map((row) => (
                 <tr
                   className="cursor-pointer transition hover:bg-[#f8faff] focus:bg-[#f8faff] focus:outline-none"
                   key={row.id}
@@ -720,27 +754,41 @@ export default function Assets() {
 
         <div className="flex flex-col gap-4 border-t border-[#c7c4d8] bg-[#f7f6fd] px-8 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-base text-[#202333]">
-            Showing <strong>{shownStart} - {shownEnd}</strong> of <strong>{totalAssets.toLocaleString("en")}</strong>{" "}
+            Showing <strong>{shownStart} - {shownEnd}</strong> of <strong>{filteredRows.length.toLocaleString("en")}</strong>{" "}
             assets
           </p>
           <div className="flex items-center gap-3">
-            <button className="grid h-11 w-11 place-items-center rounded border border-[#d7d4e3] text-[#b9b7c4]" type="button">
+            <button
+              aria-label="Previous page"
+              className="grid h-11 w-11 place-items-center rounded border border-[#c7c4d8] text-[#606475] disabled:border-[#d7d4e3] disabled:text-[#b9b7c4]"
+              disabled={activePage === 1}
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              type="button"
+            >
               <ChevronLeft className="h-5 w-5" />
             </button>
-            <button className="h-11 min-w-11 rounded bg-[#001970] px-4 font-bold text-white" type="button">
-              1
-            </button>
-            <button className="h-11 min-w-11 rounded px-4 font-medium text-[#11111a]" type="button">
-              2
-            </button>
-            <button className="h-11 min-w-11 rounded px-4 font-medium text-[#11111a]" type="button">
-              3
-            </button>
-            <span className="px-2 text-[#11111a]">...</span>
-            <button className="h-11 min-w-11 rounded px-4 font-medium text-[#11111a]" type="button">
-              248
-            </button>
-            <button className="grid h-11 w-11 place-items-center rounded border border-[#c7c4d8] text-[#606475]" type="button">
+            {paginationItems.map((item, index) =>
+              item === "ellipsis" ? (
+                <span className="px-2 text-[#11111a]" key={`ellipsis-${index}`}>...</span>
+              ) : (
+                <button
+                  aria-current={item === activePage ? "page" : undefined}
+                  className={`h-11 min-w-11 rounded px-4 font-medium ${item === activePage ? "bg-[#001970] font-bold text-white" : "text-[#11111a]"}`}
+                  key={item}
+                  onClick={() => setCurrentPage(item)}
+                  type="button"
+                >
+                  {item}
+                </button>
+              )
+            )}
+            <button
+              aria-label="Next page"
+              className="grid h-11 w-11 place-items-center rounded border border-[#c7c4d8] text-[#606475] disabled:border-[#d7d4e3] disabled:text-[#b9b7c4]"
+              disabled={activePage === totalPages}
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              type="button"
+            >
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
