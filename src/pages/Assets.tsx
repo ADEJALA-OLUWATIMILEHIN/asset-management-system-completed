@@ -267,6 +267,15 @@ const getBranchLocation = (asset: AssetApiAsset) =>
   asset.department?.branchLocation ??
   "Not recorded";
 
+const locationDistributionColors = [
+  "bg-[#001970]",
+  "bg-[#4b5b72]",
+  "bg-[#762000]",
+  "bg-[#00866a]",
+  "bg-[#7b3fa1]",
+  "bg-[#b55b00]",
+];
+
 const getRegistryCategory = (asset: AssetApiAsset): Pick<RegistryRow, "categoryLabel" | "categoryTone"> => {
   if (asset.assetCode.startsWith("OFF-")) {
     return { categoryLabel: "FURNITURE", categoryTone: "furniture" };
@@ -449,6 +458,22 @@ export default function Assets() {
       );
     });
   }, [branchFilter, classFilter, departmentFilter, registryRows, searchTerm, statusFilter]);
+
+  const locationDistribution = useMemo(() => {
+    const counts = registryRows.reduce<Map<string, number>>((locations, row) => {
+      locations.set(row.location, (locations.get(row.location) ?? 0) + 1);
+      return locations;
+    }, new Map());
+    const total = registryRows.length;
+
+    return Array.from(counts, ([location, count], index) => ({
+      location,
+      count,
+      percentage: total ? (count / total) * 100 : 0,
+      percentageLabel: total ? Math.round((count / total) * 100) : 0,
+      color: locationDistributionColors[index % locationDistributionColors.length],
+    })).sort((first, second) => second.count - first.count || first.location.localeCompare(second.location));
+  }, [registryRows]);
 
   const selectedAsset = assetId
     ? displayAssets.find((asset) => String(asset.id) === assetId)
@@ -744,23 +769,23 @@ export default function Assets() {
             <MapIcon className="h-6 w-6 text-[#606475]" />
           </div>
           <div className="mt-7 flex h-3 overflow-hidden rounded-full">
-            <span className="w-[45%] bg-[#001970]" />
-            <span className="w-[25%] bg-[#4b5b72]" />
-            <span className="w-[30%] bg-[#762000]" />
+            {locationDistribution.map((item) => (
+              <span
+                aria-label={`${item.location}: ${item.percentageLabel}%`}
+                className={item.color}
+                key={item.location}
+                style={{ width: `${item.percentage}%` }}
+                title={`${item.location}: ${item.count} asset${item.count === 1 ? "" : "s"} (${item.percentageLabel}%)`}
+              />
+            ))}
           </div>
           <div className="mt-6 flex flex-wrap gap-x-10 gap-y-3 text-base">
-            <span className="inline-flex items-center gap-3">
-              <span className="h-3 w-3 rounded-full bg-[#001970]" />
-              Chicago (45%)
-            </span>
-            <span className="inline-flex items-center gap-3">
-              <span className="h-3 w-3 rounded-full bg-[#4b5b72]" />
-              New York (25%)
-            </span>
-            <span className="inline-flex items-center gap-3">
-              <span className="h-3 w-3 rounded-full bg-[#762000]" />
-              Others (30%)
-            </span>
+            {locationDistribution.map((item) => (
+              <span className="inline-flex items-center gap-3" key={item.location}>
+                <span className={`h-3 w-3 rounded-full ${item.color}`} />
+                {item.location} ({item.percentageLabel}%)
+              </span>
+            ))}
           </div>
         </article>
       </div>
