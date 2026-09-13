@@ -40,11 +40,12 @@ function App() {
        <Route path="/login" element={<LoginRoute />} />
        <Route path="/" element={<ProtectedLayout />}>
        </Route>
+        <Route index element={<Dashboard />} />
        <Route path="assets" element={<Assets />} />
           <Route path="assets/new" element={<NewAsset />} />
           <Route path="assets/:assetId/edit" element={<NewAsset />} />
           <Route path="documents/new" element={<NewDocument />} />
-         
+        
 
           <Route path="assets/:assetId" element={<Assets />} />
           <Route path="documents" element={<Documents />} />
