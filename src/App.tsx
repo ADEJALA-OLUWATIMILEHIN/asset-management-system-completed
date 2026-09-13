@@ -1,6 +1,5 @@
 import { Routes, Route, BrowserRouter, useNavigate, Navigate } from 'react-router-dom';
 import DashboardLayout from './pages/DashboadLayout';
-import Dashboard from './pages/Dashboard';
 import Assets from './pages/Assets';
 import Maintenance from './pages/Maintenance';
 import Reports from './pages/Reports';
@@ -40,7 +39,7 @@ function App() {
        <Route path="/login" element={<LoginRoute />} />
        <Route path="/" element={<ProtectedLayout />}>
        </Route>
-        <Route index element={<Dashboard />} />
+       
        <Route path="assets" element={<Assets />} />
           <Route path="assets/new" element={<NewAsset />} />
           <Route path="assets/:assetId/edit" element={<NewAsset />} />
